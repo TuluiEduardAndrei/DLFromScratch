@@ -1,5 +1,6 @@
-from base import Module, HyperParameters, DataModule
+from base import Module, HyperParameters
 import torch
+from torch import nn
 
 class SGD(HyperParameters):
     """Minibatch stochastic gradient descent."""
@@ -26,6 +27,7 @@ class LinearRegressionScratch(Module):
     def __init__(self, num_inputs, lr, sigma=0.01):
         super().__init__()
         self.save_hyperparameters()
+
         self.w = torch.normal(0, sigma, (num_inputs, 1), requires_grad=True)
         self.b = torch.zeros(1, requires_grad=True)
 
@@ -39,26 +41,28 @@ class LinearRegressionScratch(Module):
     def configure_optimizers(self) -> SGD:
         return SGD([self.w, self.b], self.lr)
 
-class SyntheticRegressionData(DataModule):
-    """Synthetic data for linear regression."""
 
-    num_train: int
-    batch_size: int
+class LinearRegression(Module):
+    """The linear regression model implemented with high-level APIs."""
 
-    def __init__(self, w, b, noise=0.01, num_train=1000, num_val=1000, batch_size=32):
+    lr: float
+
+    def __init__(self, lr):
         super().__init__()
         self.save_hyperparameters()
+        self.net = nn.LazyLinear(1)
+        self.net.weight.data.normal_(0, 0.01)
+        self.net.bias.data.fill_(0)
 
-        n = num_train + num_val
-        self.X = torch.randn(n, len(w))
-        noise = torch.randn(n, 1) * noise
-        self.y = torch.matmul(self.X, w.reshape(-1, 1)) + b + noise
+    def forward(self, X) -> torch.Tensor:
+        return self.net(X)
 
-    def get_tensorloader(self, tensors, train, indices=slice(0, None)):
-        tensors = tuple(a[indices] for a in tensors)
-        dataset = torch.utils.data.TensorDataset(*tensors)
-        return torch.utils.data.DataLoader(dataset, self.batch_size, shuffle=train)
+    def loss(self, y_hat, y) -> torch.Tensor:
+        fn = nn.MSELoss()
+        return fn(y_hat, y)
 
-    def get_dataloader(self, train):
-        i = slice(0, self.num_train) if train else slice(self.num_train, None)
-        return self.get_tensorloader((self.X, self.y), train, i)
+    def configure_optimizers(self) -> SGD:
+        return torch.optim.SGD(self.parameters(), self.lr)
+
+    def parameters(self):
+        return [self.net.weight, self.net.bias]

@@ -4,7 +4,6 @@ import torch
 
 class HyperParameters:
     """The base class of hyperparameters."""
-
     def __init__(self):
         self.hparams: dict[str, Any] = {}
 
@@ -35,9 +34,8 @@ class HyperParameters:
             setattr(self, k, v)
 
 
-class Module(torch.nn.Module, HyperParameters):
+class Module(HyperParameters):
     """The base (skelet) class of models."""
-
     def __init__(self):
         super().__init__()
         self.save_hyperparameters()
@@ -45,17 +43,22 @@ class Module(torch.nn.Module, HyperParameters):
         self.val_losses: list = []
 
     # To be implemented by the concrete model.
-    def loss(self, y_hat, y):
+    def loss(self, y_hat: torch.Tensor, y:torch.Tensor):
         raise NotImplementedError
 
     # To be implemented by the concrete model.
     def forward(self, X):
         raise NotImplementedError
 
+    def __call__(self, *args, **kwargs):
+        return self.forward(*args, **kwargs)
+
+    # To be implemented by the concrete model.
     def training_step(self, batch) -> torch.Tensor:
         l = self.loss(self(*batch[:-1]), batch[-1])
         return l
 
+    # To be implemented by the concrete model.
     def validation_step(self, batch) -> None:
         l: torch.Tensor = self.loss(self(*batch[:-1]), batch[-1])
         self.val_losses.append(l.item())
@@ -64,19 +67,25 @@ class Module(torch.nn.Module, HyperParameters):
     def configure_optimizers(self):
         raise NotImplementedError
 
-class DataModule(HyperParameters):
-    """The base class of data."""
 
-    def __init__(self):
-        super().__init__()
-        self.save_hyperparameters()
 
-    # To be implemented by the concrete data module
-    def get_dataloader(self, train):
-        raise NotImplementedError
 
-    def train_dataloader(self):
-        return self.get_dataloader(train=True)
 
-    def val_dataloader(self):
-        return self.get_dataloader(train=False)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

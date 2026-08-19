@@ -4,7 +4,6 @@ from typing import Any
 
 class Trainer(HyperParameters):
     """The base class for training models with data."""
-
     max_epochs: int
     num_train_batches: int
     num_val_batches: int
@@ -48,7 +47,7 @@ class Trainer(HyperParameters):
             self.fit_epoch()
 
     def fit_epoch(self) -> None:
-        self.model.train()
+        # self.model.train()
 
         for batch in self.train_dataloader:
             loss = self.model.training_step(self.prepare_batch(batch))
@@ -68,7 +67,7 @@ class Trainer(HyperParameters):
             print(f"Epoch {self.epoch + 1}/{self.max_epochs} finished!")
             return
 
-        self.model.eval()
+        # self.model.eval()
         for batch in self.val_dataloader:
             with torch.no_grad():
                 self.model.validation_step(self.prepare_batch(batch))
@@ -79,4 +78,25 @@ class Trainer(HyperParameters):
             print(f"Validation Loss: {avg_loss:.4f}")
             self.model.val_losses.clear()
 
-        print(f"Epoch {self.epoch + 1}/{self.max_epochs} finished!")
+        if self.model.val_accuracy:
+            avg_accuracy = (sum(self.model.val_accuracy) / len(self.model.val_accuracy))
+            print(f"Validation Accuracy: {avg_accuracy * 100:.2f}%")
+            self.model.val_accuracy.clear()
+
+        correct = 0
+        total = 0
+
+        for batch in self.val_dataloader:
+            X, y = batch
+
+            with torch.no_grad():
+                y_hat = self.model(X)
+
+            predictions = y_hat.argmax(dim=1)
+            correct += (predictions == y).sum().item()  # counts the True values
+            total += y.numel()
+
+        print(f"Correct predictions: {correct}/{total}")
+        print(f"Wrong predictions: {total - correct}/{total}")
+
+        print(f"Epoch {self.epoch + 1}/{self.max_epochs} finished!\n")
