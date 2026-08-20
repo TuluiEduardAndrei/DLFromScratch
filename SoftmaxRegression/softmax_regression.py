@@ -1,5 +1,7 @@
 from base import Module, HyperParameters
 import torch
+from torch import nn
+from torch.nn import functional as F
 from classification import Classifier
 
 class SGD(HyperParameters):
@@ -51,3 +53,24 @@ class SoftmaxRegressionScratch(Classifier):
 
     def loss(self, y_hat, y):
         return cross_entropy(y_hat, y)
+
+class SoftmaxRegression(Classifier):
+    """The concrete softmax regression model."""
+    lr: float
+
+    def __init__(self, num_outputs, lr):
+         super().__init__()
+         self.save_hyperparameters()
+
+         self.net = nn.Sequential(nn.Flatten(), nn.LazyLinear(num_outputs))
+
+    def forward(self, X):
+        return self.net(X)
+
+    def configure_optimizers(self):
+        return torch.optim.SGD(self.net.parameters(), self.lr)
+
+    def loss(self, y_hat, y, averaged=True):
+        y_hat = y_hat.reshape((-1, y_hat.shape[-1]))     # Y_hat: torch.Size([256, 10])
+        y = y.reshape((-1,))     # Y: torch.Size([256])
+        return F.cross_entropy(y_hat, y, reduction='mean' if averaged else 'none')
