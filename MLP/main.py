@@ -1,4 +1,4 @@
-from softmax_regression import SoftmaxRegressionScratch, SoftmaxRegression
+from mlp import MLPScratch, MLP
 from data import FashionMNIST
 from trainer import Trainer
 import torch
@@ -7,7 +7,7 @@ import torch
 def main():
     print("\nFrom Scratch\n")
     data = FashionMNIST(batch_size=256)
-    model = SoftmaxRegressionScratch(num_inputs=784, num_outputs=10, lr=0.1)
+    model = MLPScratch(num_inputs=784, num_hiddens=256, num_outputs=10, lr=0.1)
     trainer = Trainer(max_epochs=10)
     trainer.fit(model, data)
 
@@ -38,7 +38,7 @@ def main():
 
     print("Using PyTorch API\n")
     data = FashionMNIST(batch_size=256)
-    model = SoftmaxRegression(num_outputs=10, lr=0.1)
+    model = MLP(num_hiddens=256, num_outputs=10, lr=0.1)
     trainer = Trainer(max_epochs=10)
     trainer.fit(model, data)
 
@@ -65,6 +65,5 @@ def main():
     for i in range(10):
         print(f"True: {labels[y[i]]:<12}\tPredicted: {labels[predictions[i]]}")
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
